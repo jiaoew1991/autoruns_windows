@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Autoruns.Controller.RegistryFilter;
 using Autoruns.Model;
 using Autoruns.utils;
 using Microsoft.Win32;
@@ -12,9 +13,12 @@ namespace Autoruns.Controller
     class RegistryReader
     {
         RegistryKey mKey;
+        string baseName;
         public RegistryReader(RegistryKey key)
         {
             mKey = key;
+            string s = key.ToString();
+            baseName = s.Substring(s.LastIndexOf("\\") + 1);
         }
         public List<BaseModel> GetModelListByValue()
         {
@@ -30,6 +34,10 @@ namespace Autoruns.Controller
             }
             return list;
         }
+        public string GetValueByName(string name)
+        {
+            return mKey.GetValue(name).ToString();
+        }
         public List<string> GetValues()
         {
             List<string> list = new List<string>();
@@ -39,8 +47,39 @@ namespace Autoruns.Controller
             }
             return list;
         }
+        public List<RegistryKey> GetSubKeysWithFilter(Dictionary<string, IFilter> fDic)
+        {
+            List<RegistryKey> regList = new List<RegistryKey>();
+            foreach (string subName in mKey.GetSubKeyNames())
+            {
+                RegistryKey key = mKey.OpenSubKey(subName);
+                bool rst = true;
+                foreach (KeyValuePair<string, IFilter> kv in fDic)
+                {
+                    object regValue = key.GetValue(kv.Key);
+                    if (regValue is string)
+                    {
+                        regValue = GetPureValueName(regValue.ToString());
+                    }
+                    if (!kv.Value.Filter(regValue))
+                    {
+                        rst = false;
+                        break;
+                    }
+                }
+                if (rst)
+                {
+                    regList.Add(key);
+                }
+            }
+            return regList;
+        }
         public string GetEntryName()
         {
+            if (!baseName.StartsWith("{"))
+            {
+                return baseName;
+            }
             string name = "";
             foreach (string valuename in mKey.GetValueNames())
             {
@@ -56,6 +95,7 @@ namespace Autoruns.Controller
         {
             src = StringUtils.RemoveTailByTag(src, " /");
             src = StringUtils.RemoveTailByTag(src, " -");
+            src = StringUtils.RemoveTailByTag(src, ",-");
             return StringUtils.RemoveQuote(src);
         }
     }

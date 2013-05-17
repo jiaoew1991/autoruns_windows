@@ -21,7 +21,8 @@ namespace Autoruns
             //Application.Run(new Form1());
 
             //List<BaseModel> models = MainController.GetLogonList();
-            MainController.GetIEList();
+            //MainController.GetIEList();
+            MainController.GetServicesList();
             Console.WriteLine("abc");
         }
     }

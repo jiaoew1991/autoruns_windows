@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Autoruns.Controller.RegistryFilter;
 using Autoruns.Model;
 using Autoruns.utils;
 using Microsoft.Win32;
@@ -30,8 +31,6 @@ namespace Autoruns.Controller
         public const string SOFTWARE_EXPLORER_BROWSER = "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Browser Helper Objects";
         public const string SOFTWARE_INTERNET_EXTENSIONS = "Software\\Microsoft\\Internet Explorer\\Extensions";
 
-        public const string SOFTWARE_INTERNET_URLHOOKS = "Software\\Microsoft\\Internet Explorer\\UrlSearchHooks";
-
         public const string SOFTWARE_CLSID = "Software\\Classes\\CLSID";
         public const string INPROCSERVER = "InprocServer32";
         public static List<BaseModel> GetIEList()
@@ -40,6 +39,32 @@ namespace Autoruns.Controller
             RegistryKey dataKey = Registry.LocalMachine.OpenSubKey(SOFTWARE_CLSID);
             modelList.AddRange(MakeListByKey(Registry.LocalMachine.OpenSubKey(SOFTWARE_EXPLORER_BROWSER), dataKey));
             modelList.AddRange(MakeListByKey(Registry.LocalMachine.OpenSubKey(SOFTWARE_INTERNET_EXTENSIONS)));
+            return modelList;
+        }
+        public const string SYSTEM_SERVICES = "System\\CurrentControlSet\\Services";
+        public const string IMAGE_PATH = "ImagePath";
+        public const string DESCRIPTION = "Description";
+        public static List<BaseModel> GetServicesList()
+        {
+            List<BaseModel> modelList = new List<BaseModel>();
+            Dictionary<string, IFilter> dic = new Dictionary<string, IFilter>();
+            dic.Add("Type", new EqualFilter<int>(16, 32));
+            dic.Add("Type", new EqualFilter<string>("LocalSystem"));
+            dic.Add(DESCRIPTION, new EndWithFileter(".exe"));
+            dic.Add(IMAGE_PATH, new ContainFileter("svchost"));
+            RegistryReader regReader = new RegistryReader(Registry.LocalMachine.OpenSubKey(SYSTEM_SERVICES));
+            List<RegistryKey> regList = regReader.GetSubKeysWithFilter(dic);
+            foreach (RegistryKey r in regList)
+            {
+                RegistryKey paramKey = r.OpenSubKey("Parameters");
+                string name = "";
+                if (paramKey != null)
+                {
+                    name = paramKey.GetValue("ServiceDLL").ToString();
+                }
+                BaseModel model = new FileVersionHelper(name).GetFileInfoModel();
+                modelList.Add(model);
+            }
             return modelList;
         }
         private static List<BaseModel> GetModelListByKey(RegistryKey key)
