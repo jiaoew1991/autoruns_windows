@@ -31,5 +31,12 @@ namespace Autoruns.utils
                 return src;
             return src.Substring(0, end);
         }
+        public static string GetLastSubString(string src, string tag)
+        {
+            int end = src.LastIndexOf(tag);
+            if (end == -1)
+                return src;
+            return src.Substring(end + 1, src.Length - end - 1);
+        }
     }
 }

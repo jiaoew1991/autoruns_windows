@@ -34,6 +34,7 @@ namespace Autoruns.Controller
                 model.Description = fileInfo.FileDescription;
                 model.ImagePath = exeName;
                 model.Publisher = fileInfo.CompanyName;
+                model.Name = fileInfo.OriginalFilename;
             }
             else
             {

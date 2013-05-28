@@ -38,6 +38,28 @@ namespace Autoruns.Controller
         {
             return mKey.GetValue(name).ToString();
         }
+        public List<string> GetValues(params IFilter[] filters)
+        {
+            List<string> values = new List<string>();
+            foreach (string valueName in mKey.GetValueNames())
+            {
+                string value = mKey.GetValue(valueName).ToString();
+                bool isFit = true;
+                foreach (IFilter f in filters)
+                {
+                    if (!f.Filter(value))
+                    {
+                        isFit = false;
+                        break;
+                    }
+                }
+                if (isFit)
+                {
+                    values.Add(value);
+                }
+            }
+            return values;
+        }
         public List<string> GetValues()
         {
             List<string> list = new List<string>();
@@ -47,24 +69,27 @@ namespace Autoruns.Controller
             }
             return list;
         }
-        public List<RegistryKey> GetSubKeysWithFilter(Dictionary<string, IFilter> fDic)
+        public List<RegistryKey> GetSubKeys(Dictionary<string, IFilter> fDic)
         {
             List<RegistryKey> regList = new List<RegistryKey>();
             foreach (string subName in mKey.GetSubKeyNames())
             {
                 RegistryKey key = mKey.OpenSubKey(subName);
                 bool rst = true;
-                foreach (KeyValuePair<string, IFilter> kv in fDic)
+                if (fDic != null)
                 {
-                    object regValue = key.GetValue(kv.Key);
-                    if (regValue is string)
+                    foreach (KeyValuePair<string, IFilter> kv in fDic)
                     {
-                        regValue = GetPureValueName(regValue.ToString());
-                    }
-                    if (!kv.Value.Filter(regValue))
-                    {
-                        rst = false;
-                        break;
+                        object regValue = key.GetValue(kv.Key);
+                        if (regValue is string)
+                        {
+                            regValue = GetPureValueName(regValue.ToString());
+                        }
+                        if (!kv.Value.Filter(regValue))
+                        {
+                            rst = false;
+                            break;
+                        }
                     }
                 }
                 if (rst)
